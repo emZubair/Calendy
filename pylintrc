@@ -1,0 +1,14 @@
+[FORMAT]
+max-line-length=120
+ignore=migrations
+disable =
+    no-member,
+    broad-except,
+    invalid-name,
+    method-hidden,
+    undefined-variable,
+    too-many-ancestors,
+    too-few-public-methods,
+    missing-class-docstring,
+    missing-module-docstring,
+    missing-function-docstring,
