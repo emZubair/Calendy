@@ -1,0 +1,67 @@
+[
+{
+  "model": "meetings.meeting",
+  "pk": 1,
+  "fields": {
+    "created_by": 3,
+    "title": "iOS Developers Slot",
+    "start_time": "2022-03-16T18:15:14Z",
+    "end_time": "2022-03-16T18:30:14Z",
+    "slot_duration_in_minutes": 15,
+    "reserver_name": null,
+    "reserver_email": null
+  }
+},
+{
+  "model": "meetings.meeting",
+  "pk": 2,
+  "fields": {
+    "created_by": 2,
+    "title": "Manual QA Post",
+    "start_time": "2022-06-16T18:00:00Z",
+    "end_time": "2022-06-16T18:45:00Z",
+    "slot_duration_in_minutes": 45,
+    "reserver_name": null,
+    "reserver_email": null
+  }
+},
+{
+  "model": "meetings.meeting",
+  "pk": 3,
+  "fields": {
+    "created_by": 3,
+    "title": "iOS Developer Round, Detailed",
+    "start_time": "2022-06-16T18:00:00Z",
+    "end_time": "2022-06-16T18:45:00Z",
+    "slot_duration_in_minutes": 45,
+    "reserver_name": null,
+    "reserver_email": null
+  }
+},
+{
+  "model": "meetings.meeting",
+  "pk": 4,
+  "fields": {
+    "created_by": 1,
+    "title": "The created Via Web",
+    "start_time": "2022-04-20T18:15:14Z",
+    "end_time": "2022-04-20T19:00:14Z",
+    "slot_duration_in_minutes": 45,
+    "reserver_name": "Zubair",
+    "reserver_email": "zee@example.om"
+  }
+},
+{
+  "model": "meetings.meeting",
+  "pk": 5,
+  "fields": {
+    "created_by": 1,
+    "title": "Automation for QA Team",
+    "start_time": "2022-06-20T18:15:14Z",
+    "end_time": "2022-06-20T18:45:14Z",
+    "slot_duration_in_minutes": 15,
+    "reserver_name": null,
+    "reserver_email": null
+  }
+}
+]

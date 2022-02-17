@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 
 CUSTOM_APPS = [
     'meetings.apps.MeetingsConfig',
+    'zee_utils.apps.ZeeUtilsConfig',
 ]
 
 THIRD_PARTY = [
