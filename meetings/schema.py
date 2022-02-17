@@ -1,9 +1,13 @@
-import graphene
-from graphene import String, Int, Boolean, ObjectType
+from django.utils import timezone
+from django.db.models import Q
 
+from graphql import GraphQLError
+from graphene import (String, Int, Boolean, ObjectType, List, Mutation,
+                      Field, Schema)
 from graphene_django import DjangoObjectType
+
 from .models import Meeting
-from .utils import reserve_meeting, create_or_update_meeting
+from .utils import (reserve_meeting, create_or_update_meeting, delete_meeting)
 
 
 class MeetingType(DjangoObjectType):
@@ -51,7 +55,18 @@ class MeetingDeleteType(ObjectType):
         return "Meeting deleted successfully"
 
 
-class CreateUpdateMeeting(graphene.Mutation):
+class PrivateView:
+    @classmethod
+    def validate_user(cls, info, error_message="Private view"):
+        """
+        validate user is logged in
+        """
+
+        if info.context.user.is_anonymous:
+            raise GraphQLError(error_message)
+
+
+class CreateUpdateMeeting(Mutation, PrivateView):
     class Arguments:
         meeting_id = Int()
         title = String()
@@ -59,11 +74,12 @@ class CreateUpdateMeeting(graphene.Mutation):
         slot_duration_in_minutes = Int()
 
     ok = Boolean()
-    meeting = graphene.Field(MeetingCreateUpdateType)
+    meeting = Field(MeetingCreateUpdateType)
 
-    def mutate(self, info, title, start_time, slot_duration_in_minutes, meeting_id=None):
-        # if meeting_id:
+    @classmethod
+    def mutate(cls, root, info, title, start_time, slot_duration_in_minutes, meeting_id=None):
         ok = False
+        cls.validate_user(info, "You must be logged in to create a meeting")
         meeting = create_or_update_meeting(title, start_time, slot_duration_in_minutes, info.context.user,
                                            meeting_id)
 
@@ -72,7 +88,7 @@ class CreateUpdateMeeting(graphene.Mutation):
         return CreateUpdateMeeting(meeting=meeting, ok=ok)
 
 
-class ReserveMeeting(graphene.Mutation):
+class ReserveMeeting(Mutation):
     """
     Allows guest users to reserve a meeting added by Registered Users
     """
@@ -82,7 +98,7 @@ class ReserveMeeting(graphene.Mutation):
         reserver_email = String()
 
     ok = Boolean()
-    meeting = graphene.Field(MeetingType)
+    meeting = Field(MeetingType)
 
     def mutate(self, info, meeting_id, reserver_name, reserver_email):
         """
@@ -95,55 +111,67 @@ class ReserveMeeting(graphene.Mutation):
         return ReserveMeeting(meeting=meeting, ok=ok)
 
 
-class DeleteMeeting(graphene.Mutation):
+class DeleteMeeting(Mutation, PrivateView):
+    """
+    Delete the meeting matching given ID
+    """
     class Arguments:
-        id = Int()
+        meeting_id = Int()
 
     ok = Boolean()
-    meeting = graphene.Field(MeetingDeleteType)
+    meeting = Field(MeetingDeleteType)
 
-    def mutate(self, info, id):
-        Meeting.objects.get(id=id).delete()
-        print(f'Deleting meeting with ID:{id}')
+    @classmethod
+    def mutate(cls, root, info, meeting_id):
+        cls.validate_user(info, "You must be logged in to Delete a meeting")
+        delete_meeting(meeting_id, info.context.user)
         ok = True
         return DeleteMeeting(ok=ok)
 
 
-class Mutation(graphene.ObjectType):
+class Mutation(ObjectType):
     reserve_meeting = ReserveMeeting.Field()
     delete_meeting = DeleteMeeting.Field()
     create_update_meeting = CreateUpdateMeeting.Field()
 
 
-class Query(graphene.ObjectType):
+class Query(ObjectType):
     """
     A list of qeries to get list of meetings
     : all_meetings: get list of all meetings
     """
-    all_meetings = graphene.List(MeetingType)
-    meetings_by_owner = graphene.Field(MeetingType, user_id=graphene.Int())
+
+    my_meetings = List(MeetingType)
+    all_meetings = List(MeetingType)
+    bookable_meetings = List(MeetingType)
+    meetings_by_owner = List(MeetingType, user_id=Int())
+
+    def resolve_bookable_meetings(self, info, **kwargs):
+        """
+        Get all available meetings
+        """
+
+        return Meeting.objects.filter(Q(Q(reserver_name=None) & Q(start_time__gte=timezone.now())))
 
     def resolve_all_meetings(self, info, **kwargs):
         """
         Get all available meetings
         """
-        if not info.context.user.is_authenticated:
-            print("User is not authenticated")
-        else:
-            print("User is authenticated")
+
         return Meeting.objects.all()
 
     def resolve_meetings_by_owner(self, info, user_id):
+
+        """
+        Get list of meetings created by a particular User
+        """
         return Meeting.objects.filter(created_by=user_id)
 
-
-class MeetingInput(graphene.InputObjectType):
-    created_by = graphene.ID()
-    title = graphene.String()
-    start_time = graphene.String()
-    year_published = graphene.String()
-    review = graphene.Int()
+    def resolve_my_meetings(self, info):
+        """
+        Get list of meetings for logged In User
+        """
+        return Meeting.objects.filter(created_by=info.context.user)
 
 
-schema = graphene.Schema(query=Query, mutation=Mutation)
-# schema = graphene.Schema(query=Query)
+schema = Schema(query=Query, mutation=Mutation)

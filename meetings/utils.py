@@ -1,4 +1,7 @@
+from django.utils import timezone
 from datetime import datetime, timedelta
+
+from graphql import GraphQLError
 
 from .models import Meeting
 
@@ -19,25 +22,61 @@ def str_to_datetime(str_time):
     return datetime.fromisoformat(str_time)
 
 
+def _validate_user_availability(user, meeting_time):
+    """
+    validate user isn't already booked
+    """
+
+    user_meetings = Meeting.objects.filter(end_time__gte=meeting_time, created_by=user)
+    if user_meetings:
+        raise GraphQLError(f"You already have a slot booked for this time: {meeting_time}")
+
+
+def _validate_past_dates(meeting_time):
+    """
+    validate user isn't already booked
+    """
+
+    if meeting_time <= timezone.now():
+        raise GraphQLError(f"Given date has already passed, try a future date: {meeting_time}")
+
+
 def _create_meeting(title, start_time, end_time, duration, user):
     """
     create a meeting with given info
     """
 
+    _validate_past_dates(start_time)
+    _validate_user_availability(user, end_time)
     return Meeting.objects.create(created_by=user, title=title,
-                                  start_time=start_time, end_time=end_time)
+                                  start_time=start_time, end_time=end_time,
+                                  slot_duration_in_minutes=duration)
 
 
-def _update_meeting(title, start_time, end_time, duration, meeting_id):
+def _validate_meeting_owner(meeting_owner, current_user):
+    """
+    validate current user matches the given meeting owner
+    """
+
+    if meeting_owner != current_user:
+        raise GraphQLError("Invalid meeting, you don't have the rights to update or delete this meeting")
+
+
+def _update_meeting(title, start_time, end_time, duration, meeting_id, current_user):
     """
     update meeting matching given meeting ID
     """
 
-    Meeting.objects.filter(id=meeting_id).update(
-        title=title, start_time=start_time, end_time=end_time,
-        slot_duration_in_minutes=duration
-    )
-    return Meeting.objects.filter(id=meeting_id).first()
+    meeting = Meeting.objects.filter(id=meeting_id).first()
+    _validate_meeting_owner(meeting.created_by, current_user)
+
+    if meeting:
+        Meeting.objects.filter(id=meeting_id).update(
+            title=title, start_time=start_time, end_time=end_time,
+            slot_duration_in_minutes=duration
+        )
+        return meeting
+    return None
 
 
 def create_or_update_meeting(title, start_time, duration, user, meeting_id):
@@ -55,7 +94,7 @@ def create_or_update_meeting(title, start_time, duration, user, meeting_id):
     start_time = str_to_datetime(start_time)
     end_time = calculate_meeting_end_time(start_time, duration)
     meeting = _create_meeting(title, start_time, end_time, duration, user) if \
-        meeting_id is None else _update_meeting(title, start_time, end_time, duration, meeting_id)
+        meeting_id is None else _update_meeting(title, start_time, end_time, duration, meeting_id, user)
     return meeting
 
 
@@ -68,10 +107,26 @@ def reserve_meeting(meeting_id, reserver_name, reserver_email):
 
     if Meeting.objects.filter(id=meeting_id).exists():
         meeting = Meeting.objects.filter(id=meeting_id).first()
-        if meeting.is_reserved or meeting.is_meeting_over:
-            return False, None
+        if meeting.is_reserved:
+            raise GraphQLError("Meeting already reserved by another candidate")
+        if meeting.is_meeting_over:
+            raise GraphQLError("Meeting is over, please reserve a new meeting with Future date")
         meeting.reserver_name = reserver_name
         meeting.reserver_email = reserver_email
         meeting.save()
         return True, meeting
     return False, None
+
+
+def delete_meeting(meeting_id, user):
+    """
+    Delete the meeting matching given meeting ID & User
+    """
+
+    meeting = Meeting.objects.filter(id=meeting_id).first()
+
+    if meeting is None:
+        raise GraphQLError(f'No Meeting found matching the given ID: {meeting_id}')
+    _validate_meeting_owner(meeting.created_by, user)
+    print(f'Deleting meeting with ID:{meeting_id}')
+    meeting.delete()
