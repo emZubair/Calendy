@@ -104,6 +104,7 @@ def _update_meeting(title, start_time, end_time, duration, meeting_id, current_u
             title=title, start_time=start_time, end_time=end_time,
             slot_duration_in_minutes=duration
         )
+        meeting.refresh_from_db()
         return meeting
     return None
 
