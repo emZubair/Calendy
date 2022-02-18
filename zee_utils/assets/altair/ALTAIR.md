@@ -116,7 +116,7 @@ query{
     id
     startTime
     endTime
-    slotDurationInMinutes
+    meetingDuration
     isReserved
     reserverName
     reserverEmail
@@ -156,6 +156,7 @@ mutation{
       owner
       startTime
       endTime
+      meetingDuration
     }
   }
 }
