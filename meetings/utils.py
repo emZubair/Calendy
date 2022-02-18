@@ -42,13 +42,15 @@ def _next_free_slot(reserved_meetings, start_time):
     return wait_message
 
 
-def _validate_user_availability(user, meeting_time):
+def _validate_user_availability(user, meeting_time, meeting_to_update=None):
     """
     validate user isn't already booked
     """
 
     user_meetings = Meeting.objects.filter(start_time__lte=meeting_time,
                                            end_time__gte=meeting_time, created_by=user)
+    if meeting_to_update:
+        user_meetings = user_meetings.exclude(id=meeting_to_update.id)
 
     wait_message = _next_free_slot(user_meetings, meeting_time)
 
@@ -95,7 +97,7 @@ def _update_meeting(title, start_time, end_time, duration, meeting_id, current_u
     meeting = Meeting.objects.filter(id=meeting_id).first()
     _validate_meeting_owner(meeting.created_by, current_user)
     _validate_past_dates(start_time)
-    _validate_user_availability(current_user, start_time)
+    _validate_user_availability(current_user, start_time, meeting)
 
     if meeting:
         Meeting.objects.filter(id=meeting_id).update(

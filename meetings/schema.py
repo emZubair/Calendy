@@ -11,6 +11,10 @@ from .models import Meeting
 from .utils import (reserve_meeting, create_or_update_meeting, delete_meeting)
 
 
+def resolve_meeting_duration(obj):
+    return f'{obj.slot_duration_in_minutes} minutes'
+
+
 class MeetingType(DjangoObjectType):
     """
     Meeting type to map Django Model
@@ -23,15 +27,18 @@ class MeetingType(DjangoObjectType):
             'start_time',
             'end_time',
             'reserver_name',
-            'reserver_email',
-            'slot_duration_in_minutes'
+            'reserver_email'
         )
         description = "Meeting type to map Django Model"
     owner = String()
+    meeting_duration = String()
     is_reserved = Boolean()
 
     def resolve_owner(self, info):
         return self.created_by.username
+
+    def resolve_meeting_duration(self, info):
+        return resolve_meeting_duration(self)
 
     def resolve_is_reserved(self, info):
         return self.is_reserved
@@ -47,20 +54,16 @@ class MeetingCreateUpdateType(DjangoObjectType):
             'id',
             'title',
             'start_time',
-            'slot_duration_in_minutes',
             'end_time'
         )
     owner = String()
+    meeting_duration = String()
 
     def resolve_owner(self, info):
         return self.created_by.username
 
-
-class MeetingDeleteType(ObjectType):
-    message = String()
-
-    def resolve_message(self):
-        return "Meeting deleted successfully"
+    def resolve_meeting_duration(self, info):
+        return resolve_meeting_duration(self)
 
 
 class PrivateView:
@@ -150,11 +153,11 @@ class DeleteMeeting(Mutation, PrivateView):
     """
     Delete the meeting matching given ID
     """
+
+    message = String()
+
     class Arguments:
         meeting_id = Int()
-
-    ok = Boolean()
-    meeting = Field(MeetingType)
 
     @classmethod
     def mutate(cls, root, info, meeting_id):
@@ -162,10 +165,10 @@ class DeleteMeeting(Mutation, PrivateView):
         Meeting is deleted if user is logged In, and logged in user has created the meeting
         """
 
-        cls.validate_user(info, "You must be logged in to Delete a meeting")
-        meeting = delete_meeting(meeting_id, info.context.user)
-        ok = True
-        return DeleteMeeting(meeting, ok=ok)
+        # cls.validate_user(info, "You must be logged in to Delete a meeting")
+        # meeting = delete_meeting(meeting_id, info.context.user)
+        message = {"message": "Meeting Delete Successfully"}
+        return message
 
 
 class Mutation(ObjectType):

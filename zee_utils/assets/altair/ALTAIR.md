@@ -49,7 +49,8 @@ query{
     endTime
     title
     isReserved
-    slotDurationInMinutes
+    startTime
+    meetingDuration
   }
 }
 ```
@@ -61,7 +62,7 @@ query{
     id
     startTime
     endTime
-    slotDurationInMinutes
+    meetingDuration
     isReserved
     owner
   }
@@ -77,7 +78,7 @@ query{
     title
     startTime
     endTime
-    slotDurationInMinutes
+    meetingDuration
   }
 }
 ```
@@ -86,7 +87,7 @@ query{
 ```shell
 mutation{
   reserveMeeting: reserveMeeting(
-    meetingId: 4, 
+    meetingId: 1, 
     reserverName: "Dave", 
     reserverEmail: "dave@example.om") {
     meeting{
@@ -96,6 +97,7 @@ mutation{
       isReserved
       startTime
       endTime
+      meetingDuration
       reserverEmail
       owner
     }
@@ -123,14 +125,15 @@ query{
 ```shell
 mutation{
   createUpdateMeeting: createUpdateMeeting(
-    title: "Created via ALTAIR",
-    startTime: "2022-03-20T18:15:14+00:00", 
+    title: "Automation for QA Team",
+    startTime: "2022-10-20T18:15:14+00:00", 
     slotDurationInMinutes:30) {
     meeting {
       title,
       owner,
       startTime,
       endTime,
+      meetingDuration
     }
   }
 }
@@ -161,11 +164,8 @@ mutation{
 mutation{
   deleteMeeting: deleteMeeting(
     meetingId: 4
-  ) 
-  {
-    meeting {
-      id
-    }
-  }
+  ) {
+    message
+  }  
 }
 ```
