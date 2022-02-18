@@ -21,6 +21,8 @@ you can import those in the following order,
 
 ![Import Collection](./images/import_coll.png)
 
+After the importing the backup & collection you can skip to [Explore the APIs](#Explore-the-APIs)
+
 ### Create New Environments
 Open Altair and create two environments, first for guest users and second for authenticated users.
 Click the setting gear ICON at the right top corner of the Altair app.
