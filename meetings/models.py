@@ -35,5 +35,5 @@ class Meeting(models.Model):
         return self.end_time < timezone.now()
 
     def __str__(self):
-        return f'{self.title} Duration:{self.slot_duration_in_minutes} minutes'
+        return f'{self.title} Duration:{self.slot_duration_in_minutes} minutes, by: {self.created_by.username}'
 
