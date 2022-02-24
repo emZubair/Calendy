@@ -18,7 +18,7 @@ To setup the project locally create & activate a virtual environment using pytho
 
 2. After clone, type `cd calendy` & project install the requirements using 
 
-   `pip install -e requirements.txt`
+   `pip install -r requirements.txt`
 3. Run the migrations using, `python manage.py migrate`
 This will populate the database with 4 users & some meetings.
 User's details is given below
